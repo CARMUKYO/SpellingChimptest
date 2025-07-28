@@ -1,0 +1,2 @@
+# SpellingChimptest
+This game allows you to enter a word, then it shuffles the letters and briefly shows them before hiding them. Your task is to click the letters in the correct order to spell the word.
