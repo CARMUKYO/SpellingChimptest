@@ -8,7 +8,7 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 
 let targetWord = ''; // The word entered by the user
 let letters = []; // Array of letters from the target word
-let shuffledLetters = []; // Letters shuffled for display, this will now persist for the round
+let shuffledLetters = []; // Letters shuffled for display
 let currentClickIndex = 0; // Tracks which letter the user should click next
 let gameStarted = false; // Flag to indicate if the game is active
 let startTime; // To record game start time
@@ -43,16 +43,18 @@ function displayMessage(msg, type = '') {
 }
 
 /**
- * Initializes the game board with a given array of letters.
- * This function no longer shuffles the letters itself.
- * @param {Array<string>} lettersToDisplay The array of letters to display on the board.
+ * Initializes the game board with shuffled letters.
  */
-function setupGameBoard(lettersToDisplay) {
+function setupGameBoard() {
     gameBoard.innerHTML = ''; // Clear previous board
     gameBoard.classList.remove('visible'); // Hide board initially for transition
 
-    // Create cells for each letter from the provided array
-    lettersToDisplay.forEach((letter, index) => {
+    // Create a copy of letters to shuffle for display
+    shuffledLetters = [...letters];
+    shuffleArray(shuffledLetters);
+
+    // Create cells for each letter
+    shuffledLetters.forEach((letter, index) => {
         const cell = document.createElement('div');
         cell.classList.add('cell'); // Start without 'hidden' class
         cell.dataset.index = index; // Store original shuffled index
@@ -179,7 +181,7 @@ function endGame(won) {
 function resetGame() {
     targetWord = '';
     letters = [];
-    shuffledLetters = []; // Clear shuffled letters on full reset
+    shuffledLetters = [];
     currentClickIndex = 0;
     gameStarted = false;
     score = 0;
@@ -197,7 +199,7 @@ function resetGame() {
 }
 
 /**
- * Restarts the current round, keeping the same target word and its initial shuffled pattern.
+ * Restarts the current round, keeping the same target word.
  * Used when an incorrect letter is clicked.
  */
 function restartRound() {
@@ -208,8 +210,8 @@ function restartRound() {
     timerDisplay.textContent = `Time: 0s`;
     clearInterval(timerInterval); // Stop any running timer
 
-    // Re-setup the game board using the *existing* shuffledLetters array
-    setupGameBoard(shuffledLetters);
+    // Re-setup the game board with the same word, but new shuffle
+    setupGameBoard();
     // Re-enter the study phase
     showAndHideLetters();
 
@@ -236,22 +238,17 @@ startButton.addEventListener('click', () => {
         return;
     }
 
-    // Use resetGame for a fresh start (clearing the word and previous shuffle)
+    // Use resetGame for a fresh start (clearing the word)
     resetGame();
     targetWord = word.toLowerCase();
     letters = targetWord.split('');
-
-    // Shuffle letters ONCE when the game starts for a new word
-    shuffledLetters = [...letters];
-    shuffleArray(shuffledLetters);
 
     gameStarted = true;
     wordInput.disabled = true;
     startButton.disabled = true;
     startButton.textContent = 'Game in Progress...';
 
-    // Pass the newly shuffled letters to setupGameBoard
-    setupGameBoard(shuffledLetters);
+    setupGameBoard();
     showAndHideLetters(); // Call without duration, hiding is now on first click
 });
 
