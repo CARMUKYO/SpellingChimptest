@@ -127,6 +127,11 @@ function handleCellClick(event) {
     const clickedCell = event.currentTarget;
     const clickedLetter = clickedCell.dataset.letter;
 
+    // NEW: If the cell is already correct, ignore the click
+    if (clickedCell.classList.contains('correct')) {
+        return;
+    }
+
     // Check if the clicked letter is the next expected letter in the target word
     if (clickedLetter.toLowerCase() === letters[currentClickIndex].toLowerCase()) {
         // Correct click
@@ -202,7 +207,7 @@ function endGame(won) {
     if (won) {
         if (currentMode === 'random') {
             displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds! Getting next word...`, 'success');
-            setTimeout(startNextRandomWordRound, 1500); // Start next random word round after a short delay
+            setTimeout(startNextRandomWordRound, 1000); // Start next random word round after a short delay
         } else { // Custom word mode
             displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds!`, 'success');
         }
@@ -211,9 +216,9 @@ function endGame(won) {
         saveHighScore(score); // Save high score only on game over (loss)
         // For custom word, allow restart of current word. For random, go back to menu.
         if (currentMode === 'custom') {
-             setTimeout(restartRound, 1500); // Restart the current custom word
+             setTimeout(restartRound, 1000); // Restart the current custom word
         } else { // Random mode, go back to menu on loss
-            setTimeout(() => showScreen('mainMenu'), 2000);
+            setTimeout(() => showScreen('mainMenu'), 1000);
         }
     }
 }
@@ -424,7 +429,6 @@ startButton.addEventListener('click', () => {
 backToMenuButton.addEventListener('click', () => {
     showScreen('mainMenu');
 });
-
 
 // Initial setup on page load
 document.addEventListener('DOMContentLoaded', () => {
