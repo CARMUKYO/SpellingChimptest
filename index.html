@@ -5,14 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spelling Chimp Test</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
+    <div class="main-menu" id="mainMenu">
+        <h1>Spelling Chimp Test</h1>
+        <p>Choose your game mode:</p>
+        <button id="randomWordButton">Play with a Random Word</button>
+        <button id="customWordButton">Enter Your Own Word</button>
+        <div id="highScoreDisplay" class="game-info-single">High Score: 0</div>
+    </div>
+
+    <div class="game-container hidden" id="gameContainer">
         <h1>Spelling Chimp Test</h1>
 
-        <div class="input-section">
+        <div class="input-section" id="customWordInputSection">
             <label for="wordInput">Enter a word to practice spelling:</label>
             <input type="text" id="wordInput" placeholder="e.g., 'apple'">
             <button id="startButton">Start Game</button>
@@ -28,9 +35,11 @@
             <div id="timerDisplay">Time: 0s</div>
             <div id="scoreDisplay">Score: 0</div>
         </div>
+
+        <button id="backToMenuButton" class="small-button">Back to Main Menu</button>
     </div>
 
-    <!-- Link to the external JavaScript file -->
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module" src="words.js"></script>
 </body>
 </html>
