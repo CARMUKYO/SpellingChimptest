@@ -11,7 +11,7 @@ export const randomWords = [
     "music", "dance", "art", "theater", "poetry",
     "friendship", "family", "community", "teamwork", "support",
     "technology", "innovation", "science", "research", "discovery",
-    "nature", "environment", "wildlife", "conservation", "sustainability",
+    "nature", "environment", "wildlife", "conservation",
     "adventure", "exploration", "journey", "travel", "discovery",
     "health", "wellness", "fitness", "nutrition", "exercise",
     "imagination", "creativity", "inspiration", "dream", "vision",

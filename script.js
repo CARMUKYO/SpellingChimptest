@@ -14,6 +14,7 @@ const gameBoard = document.getElementById('game-board');
 const timerDisplay = document.getElementById('timerDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
 const backToMenuButton = document.getElementById('backToMenuButton');
+const tryAgainButton = document.getElementById('tryAgainButton'); // New button reference
 const highScoreDisplay = document.getElementById('highScoreDisplay');
 
 
@@ -163,9 +164,9 @@ function handleCellClick(event) {
             endGame(true); // Game won
         }
     } else {
-        // Incorrect click - Reset the current round
-        displayMessage(`Incorrect! The word was "${targetWord.toUpperCase()}". Try again!`, 'error');
-        // Briefly show the incorrect cell before resetting the round
+        // Incorrect click - Trigger game over (loss)
+        displayMessage(`Incorrect! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
+        // Briefly show the incorrect cell before ending the game
         clickedCell.classList.remove('hide-content'); // Ensure letter is visible for incorrect flash
         clickedCell.classList.add('incorrect');
         setTimeout(() => {
@@ -193,10 +194,8 @@ function endGame(won) {
     gameStarted = false;
     clearInterval(timerInterval); // Stop the timer
     startButton.disabled = false;
-    startButton.textContent = 'Play Again';
+    startButton.textContent = 'Play Again'; // This button is now only for custom word mode
     wordInput.disabled = false;
-
-    const finalTime = Math.floor((Date.now() - startTime) / 1000);
 
     // Reveal all letters at the end of the game
     document.querySelectorAll('.cell').forEach(cell => {
@@ -207,19 +206,17 @@ function endGame(won) {
     if (won) {
         if (currentMode === 'random') {
             displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds! Getting next word...`, 'success');
-            setTimeout(startNextRandomWordRound, 1000); // Start next random word round after a short delay
+            setTimeout(startNextRandomWordRound, 1500); // Start next random word round after a short delay
         } else { // Custom word mode
+            const finalTime = Math.floor((Date.now() - startTime) / 1000); // Calculate final time for custom mode win
             displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds!`, 'success');
+            tryAgainButton.classList.remove('hidden'); // Show try again button after custom win
         }
-    } else { // Game lost (due to incorrect click or other future reasons)
-        displayMessage(`Game Over! You didn't complete the word. The word was "${targetWord.toUpperCase()}". Your score: ${score}. Try again!`, 'error');
+    } else { // Game lost (due to incorrect click)
+        // For both modes, stay on game screen and show Try Again button
+        displayMessage(`Game Over! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
         saveHighScore(score); // Save high score only on game over (loss)
-        // For custom word, allow restart of current word. For random, go back to menu.
-        if (currentMode === 'custom') {
-             setTimeout(restartRound, 1000); // Restart the current custom word
-        } else { // Random mode, go back to menu on loss
-            setTimeout(() => showScreen('mainMenu'), 1000);
-        }
+        tryAgainButton.classList.remove('hidden'); // Show try again button after loss
     }
 }
 
@@ -245,11 +242,12 @@ function resetGame() {
     wordInput.disabled = false;
     startButton.textContent = 'Start Game';
     startButton.disabled = false;
+    tryAgainButton.classList.add('hidden'); // Hide try again button on full reset
 }
 
 /**
  * Restarts the current round, keeping the same target word and its initial shuffled pattern.
- * Used when an incorrect letter is clicked in custom mode.
+ * Used when an incorrect letter is clicked in custom mode, or when 'Try Again' is clicked for custom mode.
  */
 function restartRound() {
     currentClickIndex = 0;
@@ -269,11 +267,13 @@ function restartRound() {
     startButton.disabled = true;
     startButton.textContent = 'Game in Progress...';
     gameStarted = true; // Ensure game is marked as started
+    tryAgainButton.classList.add('hidden'); // Hide try again button when restarting round
 }
 
 /**
  * Starts the next round in random word mode.
  * Keeps the score, generates a new word.
+ * Called on win in random mode or 'Try Again' in random mode.
  */
 function startNextRandomWordRound() {
     // Keep current score, only reset round-specific variables
@@ -300,6 +300,7 @@ function startNextRandomWordRound() {
     startButton.disabled = true;
     startButton.textContent = 'Game in Progress...';
     displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"! Click the first letter when ready.`, 'success');
+    tryAgainButton.classList.add('hidden'); // Hide try again button when starting new random round
 }
 
 
@@ -322,23 +323,21 @@ function showScreen(screenId) {
 
 /**
  * Starts a new game with the given word.
+ * This is called when a game mode is selected from the menu.
  * @param {string} word The word to use for the game.
  */
 function startNewGame(word) {
-    // Full reset if starting a brand new game (e.g., from menu)
-    // For random mode, score is kept across words until loss.
-    if (currentMode === 'custom') {
-        resetGame(); // Full reset for custom word mode
-    } else { // Random mode, only reset round specific state, keep score
-        currentClickIndex = 0;
-        firstClickMade = false;
-        timerDisplay.textContent = `Time: 0s`;
-        clearInterval(timerInterval);
-        gameBoard.innerHTML = ''; // Clear board for new word
-        gameBoard.classList.remove('visible');
-        score = 0; // Reset score for a fresh random game start
-        scoreDisplay.textContent = `Score: 0`;
-    }
+    // This function is called when starting a game from the menu.
+    // It should always perform a full reset of the game state relevant to starting a new game mode.
+    currentClickIndex = 0;
+    firstClickMade = false;
+    timerDisplay.textContent = `Time: 0s`;
+    clearInterval(timerInterval);
+    gameBoard.innerHTML = ''; // Clear board for new word
+    gameBoard.classList.remove('visible');
+    score = 0; // Reset score for a fresh game start in either mode
+    scoreDisplay.textContent = `Score: 0`;
+    tryAgainButton.classList.add('hidden'); // Hide try again button when starting a new game
 
     targetWord = word.toLowerCase();
     letters = targetWord.split('');
@@ -366,7 +365,7 @@ function saveHighScore(currentScore) {
     if (currentScore > existingHighScore) {
         localStorage.setItem(HIGH_SCORE_KEY, currentScore.toString());
         updateHighScoreDisplay(currentScore);
-        displayMessage(`New High Score: ${currentScore}!`, 'success');
+        displayMessage(`New High Score: ${currentScore}! 🎉`, 'success'); // Add emoji here
     }
 }
 
@@ -429,6 +428,20 @@ startButton.addEventListener('click', () => {
 backToMenuButton.addEventListener('click', () => {
     showScreen('mainMenu');
 });
+
+// Try Again Button Listener
+tryAgainButton.addEventListener('click', () => {
+    if (currentMode === 'custom') {
+        restartRound(); // Restart the current custom word
+    } else if (currentMode === 'random') {
+        // For random mode, 'Try Again' means start a new random word round,
+        // but reset the score as it's a new attempt after a loss.
+        score = 0; // Reset score for a new attempt after loss
+        scoreDisplay.textContent = `Score: 0`;
+        startNextRandomWordRound();
+    }
+});
+
 
 // Initial setup on page load
 document.addEventListener('DOMContentLoaded', () => {
