@@ -14,7 +14,7 @@ const gameBoard = document.getElementById('game-board');
 const timerDisplay = document.getElementById('timerDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
 const backToMenuButton = document.getElementById('backToMenuButton');
-const tryAgainButton = document.getElementById('tryAgainButton'); // New button reference
+const tryAgainButton = document.getElementById('tryAgainButton');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
 
 
@@ -23,7 +23,8 @@ let letters = []; // Array of letters from the target word (correct order)
 let shuffledLetters = []; // Letters shuffled for display (fixed order for the round)
 let currentClickIndex = 0; // Tracks which letter the user should click next
 let gameStarted = false; // Flag to indicate if the game is active
-let startTime; // To record game start time
+let timeLimit = 0; // The total time allowed for the current word
+let remainingTime = 0; // Time left on the countdown
 let timerInterval; // To manage the timer
 let score = 0; // Player's current score
 let firstClickMade = false; // Flag to track the first click for hiding letters
@@ -128,7 +129,7 @@ function handleCellClick(event) {
     const clickedCell = event.currentTarget;
     const clickedLetter = clickedCell.dataset.letter;
 
-    // NEW: If the cell is already correct, ignore the click
+    // If the cell is already correct, ignore the click
     if (clickedCell.classList.contains('correct')) {
         return;
     }
@@ -138,16 +139,14 @@ function handleCellClick(event) {
         // Correct click
         clickedCell.classList.remove('incorrect', 'hide-content'); // Remove incorrect and hide-content
         clickedCell.classList.add('correct'); // Add correct
-        // The span's opacity is now controlled by the presence/absence of 'hide-content' class
 
         score++;
         scoreDisplay.textContent = `Score: ${score}`;
 
-        // If this is the very first correct click, hide all other letters
+        // If this is the very first correct click, hide all other letters and start timer
         if (!firstClickMade) {
             firstClickMade = true;
-            startTime = Date.now(); // Start timer on first correct click
-            startTimer();
+            startTimer(); // Start timer here
             displayMessage('Click the remaining letters in the correct order!');
 
             document.querySelectorAll('.cell').forEach(cell => {
@@ -176,13 +175,22 @@ function handleCellClick(event) {
 }
 
 /**
- * Starts the game timer.
+ * Starts the game countdown timer.
  */
 function startTimer() {
     clearInterval(timerInterval); // Clear any existing timer
+    remainingTime = timeLimit; // Initialize remaining time
+    timerDisplay.textContent = `Time: ${remainingTime}s`;
+
     timerInterval = setInterval(() => {
-        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        timerDisplay.textContent = `Time: ${elapsedTime}s`;
+        remainingTime--;
+        timerDisplay.textContent = `Time: ${remainingTime}s`;
+
+        if (remainingTime <= 0) {
+            clearInterval(timerInterval);
+            displayMessage(`Time's up! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
+            endGame(false); // Time's up!
+        }
     }, 1000);
 }
 
@@ -194,7 +202,7 @@ function endGame(won) {
     gameStarted = false;
     clearInterval(timerInterval); // Stop the timer
     startButton.disabled = false;
-    startButton.textContent = 'Play Again'; // This button is now only for custom word mode
+    startButton.textContent = 'Play Again';
     wordInput.disabled = false;
 
     // Reveal all letters at the end of the game
@@ -205,16 +213,13 @@ function endGame(won) {
 
     if (won) {
         if (currentMode === 'random') {
-            displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds! Getting next word...`, 'success');
-            setTimeout(startNextRandomWordRound, 1500); // Start next random word round after a short delay
+            displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}"! Getting next word...`, 'success');
+            setTimeout(startNextRandomWordRound, 1000); // Start next random word round after a short delay
         } else { // Custom word mode
-            const finalTime = Math.floor((Date.now() - startTime) / 1000); // Calculate final time for custom mode win
-            displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}" in ${finalTime} seconds!`, 'success');
+            displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}"!`, 'success');
             tryAgainButton.classList.remove('hidden'); // Show try again button after custom win
         }
-    } else { // Game lost (due to incorrect click)
-        // For both modes, stay on game screen and show Try Again button
-        displayMessage(`Game Over! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
+    } else { // Game lost (due to incorrect click or time running out)
         saveHighScore(score); // Save high score only on game over (loss)
         tryAgainButton.classList.remove('hidden'); // Show try again button after loss
     }
@@ -247,7 +252,7 @@ function resetGame() {
 
 /**
  * Restarts the current round, keeping the same target word and its initial shuffled pattern.
- * Used when an incorrect letter is clicked in custom mode, or when 'Try Again' is clicked for custom mode.
+ * Used when 'Try Again' is clicked for custom mode.
  */
 function restartRound() {
     currentClickIndex = 0;
@@ -259,6 +264,11 @@ function restartRound() {
 
     // Re-setup the game board using the *existing* shuffledLetters array
     setupGameBoard(shuffledLetters);
+    // Re-calculate time limit for the existing word
+    const baseTime = 5; // Minimum time
+    const timePerLetter = 2; // Seconds per letter
+    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
+
     // Re-enter the study phase
     showAndHideLetters();
 
@@ -290,6 +300,11 @@ function startNextRandomWordRound() {
     // Generate a new shuffled pattern for the new word
     shuffledLetters = [...letters];
     shuffleArray(shuffledLetters);
+
+    // Calculate time limit for the new random word
+    const baseTime = 5; // Minimum time
+    const timePerLetter = 1.5; // Seconds per letter
+    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
 
     // Setup board with new word's shuffled letters
     setupGameBoard(shuffledLetters);
@@ -341,6 +356,12 @@ function startNewGame(word) {
 
     targetWord = word.toLowerCase();
     letters = targetWord.split('');
+
+    // Calculate time limit for the new word
+    const baseTime = 5; // Minimum time
+    const timePerLetter = 1.5; // Seconds per letter
+    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
+
 
     // Shuffle letters ONCE when the game starts for a new word
     shuffledLetters = [...letters];
