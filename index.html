@@ -17,8 +17,7 @@
     </div>
 
     <div class="game-container hidden" id="gameContainer">
-        <h1>Spelling Chimp Test</h1>
-
+        <h1 id="gameTitle">Spelling Chimp Test</h1>
         <div class="input-section" id="customWordInputSection">
             <label for="wordInput">Enter a word to practice spelling:</label>
             <input type="text" id="wordInput" placeholder="e.g., 'apple'">
@@ -27,6 +26,8 @@
 
         <p id="message">Enter a word and click "Start Game"!</p>
 
+        <div id="definitionTooltip" class="hidden"></div>
+        
         <div id="game-board">
         </div>
 
@@ -43,4 +44,3 @@
     <script type="module" src="script.js"></script>
 </body>
 </html>
-

@@ -16,9 +16,11 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const tryAgainButton = document.getElementById('tryAgainButton');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
-
+const gameTitle = document.getElementById('gameTitle'); // Reference to the game title h1
+const definitionTooltip = document.getElementById('definitionTooltip'); // New tooltip element
 
 let targetWord = ''; // The word entered by the user or randomly selected
+let targetDefinition = ''; // NEW: The definition of the target word
 let letters = []; // Array of letters from the target word (correct order)
 let shuffledLetters = []; // Letters shuffled for display (fixed order for the round)
 let currentClickIndex = 0; // Tracks which letter the user should click next
@@ -111,12 +113,40 @@ function setupGameBoard(lettersToDisplay) {
 }
 
 /**
- * Shows all letters initially. The hiding logic is now in handleCellClick.
+ * Attaches the click listener for the definition tooltip to the highlighted word.
  */
-function showAndHideLetters() {
-    // All cells are already visible from setupGameBoard
-    displayMessage(`Study the order of "${targetWord.toUpperCase()}"! Click the first letter when ready.`);
-    // The timer will start on the first correct click.
+function attachDefinitionListener() {
+    if (currentMode === 'random' && targetDefinition) {
+        // Wait a short moment to ensure the DOM has updated
+        setTimeout(() => {
+            const highlightedWord = messageDisplay.querySelector('.highlight-word');
+            if (highlightedWord) {
+                highlightedWord.addEventListener('click', toggleDefinitionTooltip);
+            }
+        }, 50);
+    }
+}
+
+/**
+ * Toggles the definition tooltip visibility.
+ */
+function toggleDefinitionTooltip() {
+    if (definitionTooltip.classList.contains('visible')) {
+        definitionTooltip.classList.remove('visible');
+        definitionTooltip.classList.add('hidden');
+    } else {
+        definitionTooltip.textContent = targetDefinition;
+        definitionTooltip.classList.remove('hidden');
+        definitionTooltip.classList.add('visible');
+    }
+}
+
+/**
+ * Hides the definition tooltip.
+ */
+function hideDefinitionTooltip() {
+    definitionTooltip.classList.add('hidden');
+    definitionTooltip.classList.remove('visible');
 }
 
 /**
@@ -148,6 +178,12 @@ function handleCellClick(event) {
             firstClickMade = true;
             startTimer(); // Start timer here
             displayMessage('Click the remaining letters in the correct order!');
+            // Remove the definition click listener
+            const highlightedWord = messageDisplay.querySelector('.highlight-word');
+            if (highlightedWord) {
+                highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
+            }
+            hideDefinitionTooltip();
 
             document.querySelectorAll('.cell').forEach(cell => {
                 if (!cell.classList.contains('correct')) {
@@ -205,6 +241,13 @@ function endGame(won) {
     startButton.textContent = 'Play Again';
     wordInput.disabled = false;
 
+    // Remove the definition click listener
+    const highlightedWord = messageDisplay.querySelector('.highlight-word');
+    if (highlightedWord) {
+        highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
+    }
+    hideDefinitionTooltip(); // Hide the tooltip if it's visible
+
     // Reveal all letters at the end of the game
     document.querySelectorAll('.cell').forEach(cell => {
         cell.classList.remove('hide-content'); // Remove hide-content to show letters and revert background
@@ -214,7 +257,7 @@ function endGame(won) {
     if (won) {
         if (currentMode === 'random') {
             displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}"! Getting next word...`, 'success');
-            setTimeout(startNextRandomWordRound, 1000); // Start next random word round after a short delay
+            setTimeout(startNextRandomWordRound, 1500); // Start next random word round after a short delay
         } else { // Custom word mode
             displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}"!`, 'success');
             tryAgainButton.classList.remove('hidden'); // Show try again button after custom win
@@ -231,6 +274,7 @@ function endGame(won) {
  */
 function resetGame() {
     targetWord = '';
+    targetDefinition = ''; // Reset definition
     letters = [];
     shuffledLetters = []; // Clear shuffled letters on full reset
     currentClickIndex = 0;
@@ -248,6 +292,13 @@ function resetGame() {
     startButton.textContent = 'Start Game';
     startButton.disabled = false;
     tryAgainButton.classList.add('hidden'); // Hide try again button on full reset
+    
+    // Remove the definition click listener
+    const highlightedWord = messageDisplay.querySelector('.highlight-word');
+    if (highlightedWord) {
+        highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
+    }
+    hideDefinitionTooltip();
 }
 
 /**
@@ -266,11 +317,12 @@ function restartRound() {
     setupGameBoard(shuffledLetters);
     // Re-calculate time limit for the existing word
     const baseTime = 5; // Minimum time
-    const timePerLetter = 2; // Seconds per letter
+    const timePerLetter = 1.5; // Seconds per letter
     timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
 
     // Re-enter the study phase
-    showAndHideLetters();
+    displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
+    attachDefinitionListener(); // No definition for custom words, but we keep this function call for consistency
 
     // Keep inputs disabled as the game is still in progress with the same word
     wordInput.disabled = true;
@@ -292,9 +344,10 @@ function startNextRandomWordRound() {
     timerDisplay.textContent = `Time: 0s`;
     clearInterval(timerInterval); // Stop previous timer
 
-    // Get a new random word
-    const newWord = randomWords[Math.floor(Math.random() * randomWords.length)];
-    targetWord = newWord.toLowerCase();
+    // Get a new random word OBJECT from the array
+    const randomWordObject = randomWords[Math.floor(Math.random() * randomWords.length)];
+    targetWord = randomWordObject.word.toLowerCase();
+    targetDefinition = randomWordObject.definition; // Store the definition
     letters = targetWord.split('');
 
     // Generate a new shuffled pattern for the new word
@@ -308,13 +361,14 @@ function startNextRandomWordRound() {
 
     // Setup board with new word's shuffled letters
     setupGameBoard(shuffledLetters);
-    showAndHideLetters(); // Re-enter study phase for the new word
+    // Set the message and add listener here
+    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"! Click the word to see its definition.`, 'success');
+    attachDefinitionListener(); // Attach the listener after a small delay
 
     gameStarted = true;
     wordInput.disabled = true;
     startButton.disabled = true;
     startButton.textContent = 'Game in Progress...';
-    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"! Click the first letter when ready.`, 'success');
     tryAgainButton.classList.add('hidden'); // Hide try again button when starting new random round
 }
 
@@ -355,6 +409,7 @@ function startNewGame(word) {
     tryAgainButton.classList.add('hidden'); // Hide try again button when starting a new game
 
     targetWord = word.toLowerCase();
+    targetDefinition = ''; // Reset the definition for a custom word
     letters = targetWord.split('');
 
     // Calculate time limit for the new word
@@ -374,7 +429,16 @@ function startNewGame(word) {
 
     // Pass the newly shuffled letters to setupGameBoard
     setupGameBoard(shuffledLetters);
-    showAndHideLetters(); // Call without duration, hiding is now on first click
+    // Set the message based on the mode
+    if (currentMode === 'random') {
+        displayMessage(`Study the order of "${targetWord.toUpperCase()}"! Click the word to see its definition.`);
+        setTimeout(() => {
+        attachDefinitionListener();
+        }, 100);
+    } else {
+        displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
+    }
+    attachDefinitionListener(); // Attach the listener after a small delay
 }
 
 /**
@@ -417,8 +481,10 @@ randomWordButton.addEventListener('click', () => {
     currentMode = 'random';
     showScreen('gameContainer');
     customWordInputSection.classList.add('hidden'); // Hide custom input for random mode
-    const word = randomWords[Math.floor(Math.random() * randomWords.length)];
-    startNewGame(word); // Start new game with random word
+    // Get a random word object, not just the word string
+    const randomWordObject = randomWords[Math.floor(Math.random() * randomWords.length)];
+    startNewGame(randomWordObject.word); // Pass the word to startNewGame
+    targetDefinition = randomWordObject.definition; // Store the definition
 });
 
 customWordButton.addEventListener('click', () => {
