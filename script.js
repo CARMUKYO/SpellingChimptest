@@ -11,23 +11,24 @@ const wordInput = document.getElementById('wordInput');
 const startButton = document.getElementById('startButton');
 const messageDisplay = document.getElementById('message');
 const gameBoard = document.getElementById('game-board');
-const timerDisplay = document.getElementById('timerDisplay');
 const scoreDisplay = document.getElementById('scoreDisplay');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const tryAgainButton = document.getElementById('tryAgainButton');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
 const gameTitle = document.getElementById('gameTitle'); // Reference to the game title h1
-const definitionTooltip = document.getElementById('definitionTooltip'); // New tooltip element
+const congratulationsScreen = document.getElementById('congratulationsScreen');
+const congratsTitle = document.getElementById('congratsTitle');
+const congratsTime = document.getElementById('congratsTime');
+const congratsDefinition = document.getElementById('congratsDefinition');
+const nextWordButton = document.getElementById('nextWordButton');
 
 let targetWord = ''; // The word entered by the user or randomly selected
-let targetDefinition = ''; // NEW: The definition of the target word
+let targetDefinition = ''; // The definition of the target word
 let letters = []; // Array of letters from the target word (correct order)
 let shuffledLetters = []; // Letters shuffled for display (fixed order for the round)
 let currentClickIndex = 0; // Tracks which letter the user should click next
 let gameStarted = false; // Flag to indicate if the game is active
-let timeLimit = 0; // The total time allowed for the current word
-let remainingTime = 0; // Time left on the countdown
-let timerInterval; // To manage the timer
+let startTime = 0; // NEW: To track the start time for the timer
 let score = 0; // Player's current score
 let firstClickMade = false; // Flag to track the first click for hiding letters
 let currentMode = 'menu'; // 'menu', 'custom', 'random'
@@ -82,7 +83,6 @@ function displayMessage(msg, type = '') {
 
 /**
  * Initializes the game board with a given array of letters.
- * This function no longer shuffles the letters itself.
  * @param {Array<string>} lettersToDisplay The array of letters to display on the board.
  */
 function setupGameBoard(lettersToDisplay) {
@@ -113,43 +113,6 @@ function setupGameBoard(lettersToDisplay) {
 }
 
 /**
- * Attaches the click listener for the definition tooltip to the highlighted word.
- */
-function attachDefinitionListener() {
-    if (currentMode === 'random' && targetDefinition) {
-        // Wait a short moment to ensure the DOM has updated
-        setTimeout(() => {
-            const highlightedWord = messageDisplay.querySelector('.highlight-word');
-            if (highlightedWord) {
-                highlightedWord.addEventListener('click', toggleDefinitionTooltip);
-            }
-        }, 50);
-    }
-}
-
-/**
- * Toggles the definition tooltip visibility.
- */
-function toggleDefinitionTooltip() {
-    if (definitionTooltip.classList.contains('visible')) {
-        definitionTooltip.classList.remove('visible');
-        definitionTooltip.classList.add('hidden');
-    } else {
-        definitionTooltip.textContent = targetDefinition;
-        definitionTooltip.classList.remove('hidden');
-        definitionTooltip.classList.add('visible');
-    }
-}
-
-/**
- * Hides the definition tooltip.
- */
-function hideDefinitionTooltip() {
-    definitionTooltip.classList.add('hidden');
-    definitionTooltip.classList.remove('visible');
-}
-
-/**
  * Handles a click on a letter cell.
  * @param {Event} event The click event.
  */
@@ -173,17 +136,11 @@ function handleCellClick(event) {
         score++;
         scoreDisplay.textContent = `Score: ${score}`;
 
-        // If this is the very first correct click, hide all other letters and start timer
+        // If this is the very first correct click, start the timer for time taken
         if (!firstClickMade) {
             firstClickMade = true;
-            startTimer(); // Start timer here
+            startTime = Date.now(); // Record the start time
             displayMessage('Click the remaining letters in the correct order!');
-            // Remove the definition click listener
-            const highlightedWord = messageDisplay.querySelector('.highlight-word');
-            if (highlightedWord) {
-                highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
-            }
-            hideDefinitionTooltip();
 
             document.querySelectorAll('.cell').forEach(cell => {
                 if (!cell.classList.contains('correct')) {
@@ -211,42 +168,38 @@ function handleCellClick(event) {
 }
 
 /**
- * Starts the game countdown timer.
+ * Shows the congratulations screen with game details.
+ * @param {number} timeTaken The time it took to spell the word.
  */
-function startTimer() {
-    clearInterval(timerInterval); // Clear any existing timer
-    remainingTime = timeLimit; // Initialize remaining time
-    timerDisplay.textContent = `Time: ${remainingTime}s`;
-
-    timerInterval = setInterval(() => {
-        remainingTime--;
-        timerDisplay.textContent = `Time: ${remainingTime}s`;
-
-        if (remainingTime <= 0) {
-            clearInterval(timerInterval);
-            displayMessage(`Time's up! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
-            endGame(false); // Time's up!
-        }
-    }, 1000);
+function showCongratulationsScreen(timeTaken) {
+    congratsTitle.textContent = `Congratulations! You spelled "${targetWord.toUpperCase()}"!`;
+    congratsTime.textContent = `You finished in ${timeTaken.toFixed(2)} seconds.`;
+    congratsDefinition.textContent = targetDefinition;
+    
+    // Hide game elements and show the new screen
+    gameContainer.classList.add('hidden');
+    congratulationsScreen.classList.remove('hidden');
+    congratulationsScreen.classList.add('visible');
 }
 
 /**
- * Ends the game, stops the timer, and displays results.
+ * Hides the congratulations screen and returns to the game container.
+ */
+function hideCongratulationsScreen() {
+    congratulationsScreen.classList.remove('visible');
+    congratulationsScreen.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
+}
+
+/**
+ * Ends the game, and displays results.
  * @param {boolean} won True if the player won, false otherwise.
  */
 function endGame(won) {
     gameStarted = false;
-    clearInterval(timerInterval); // Stop the timer
     startButton.disabled = false;
     startButton.textContent = 'Play Again';
     wordInput.disabled = false;
-
-    // Remove the definition click listener
-    const highlightedWord = messageDisplay.querySelector('.highlight-word');
-    if (highlightedWord) {
-        highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
-    }
-    hideDefinitionTooltip(); // Hide the tooltip if it's visible
 
     // Reveal all letters at the end of the game
     document.querySelectorAll('.cell').forEach(cell => {
@@ -256,13 +209,14 @@ function endGame(won) {
 
     if (won) {
         if (currentMode === 'random') {
-            displayMessage(`Correct! You spelled "${targetWord.toUpperCase()}"! Getting next word...`, 'success');
-            setTimeout(startNextRandomWordRound, 1500); // Start next random word round after a short delay
+            const timeTaken = (Date.now() - startTime) / 1000;
+            saveHighScore(score); // Save high score on win in random mode
+            showCongratulationsScreen(timeTaken); // Show the congratulations screen
         } else { // Custom word mode
             displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}"!`, 'success');
             tryAgainButton.classList.remove('hidden'); // Show try again button after custom win
         }
-    } else { // Game lost (due to incorrect click or time running out)
+    } else { // Game lost (due to incorrect click)
         saveHighScore(score); // Save high score only on game over (loss)
         tryAgainButton.classList.remove('hidden'); // Show try again button after loss
     }
@@ -282,8 +236,6 @@ function resetGame() {
     score = 0; // Reset score on full game reset
     firstClickMade = false; // Reset the flag
     scoreDisplay.textContent = `Score: 0`;
-    timerDisplay.textContent = `Time: 0s`;
-    clearInterval(timerInterval);
     gameBoard.innerHTML = '';
     gameBoard.classList.remove('visible');
     displayMessage('Enter a word and click "Start Game"!');
@@ -292,13 +244,6 @@ function resetGame() {
     startButton.textContent = 'Start Game';
     startButton.disabled = false;
     tryAgainButton.classList.add('hidden'); // Hide try again button on full reset
-    
-    // Remove the definition click listener
-    const highlightedWord = messageDisplay.querySelector('.highlight-word');
-    if (highlightedWord) {
-        highlightedWord.removeEventListener('click', toggleDefinitionTooltip);
-    }
-    hideDefinitionTooltip();
 }
 
 /**
@@ -310,20 +255,11 @@ function restartRound() {
     score = 0; // Reset score for the current custom word round
     firstClickMade = false; // Reset the flag
     scoreDisplay.textContent = `Score: 0`;
-    timerDisplay.textContent = `Time: 0s`;
-    clearInterval(timerInterval); // Stop any running timer
 
     // Re-setup the game board using the *existing* shuffledLetters array
     setupGameBoard(shuffledLetters);
-    // Re-calculate time limit for the existing word
-    const baseTime = 5; // Minimum time
-    const timePerLetter = 1.5; // Seconds per letter
-    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
-
-    // Re-enter the study phase
     displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
-    attachDefinitionListener(); // No definition for custom words, but we keep this function call for consistency
-
+    
     // Keep inputs disabled as the game is still in progress with the same word
     wordInput.disabled = true;
     startButton.disabled = true;
@@ -338,12 +274,12 @@ function restartRound() {
  * Called on win in random mode or 'Try Again' in random mode.
  */
 function startNextRandomWordRound() {
+    hideCongratulationsScreen(); // Hide the congratulations screen if it's visible
+
     // Keep current score, only reset round-specific variables
     currentClickIndex = 0;
     firstClickMade = false;
-    timerDisplay.textContent = `Time: 0s`;
-    clearInterval(timerInterval); // Stop previous timer
-
+    
     // Get a new random word OBJECT from the array
     const randomWordObject = randomWords[Math.floor(Math.random() * randomWords.length)];
     targetWord = randomWordObject.word.toLowerCase();
@@ -354,16 +290,10 @@ function startNextRandomWordRound() {
     shuffledLetters = [...letters];
     shuffleArray(shuffledLetters);
 
-    // Calculate time limit for the new random word
-    const baseTime = 5; // Minimum time
-    const timePerLetter = 1.5; // Seconds per letter
-    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
-
     // Setup board with new word's shuffled letters
     setupGameBoard(shuffledLetters);
     // Set the message and add listener here
-    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"! Click the word to see its definition.`, 'success');
-    attachDefinitionListener(); // Attach the listener after a small delay
+    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"!`, 'success');
 
     gameStarted = true;
     wordInput.disabled = true;
@@ -375,11 +305,12 @@ function startNextRandomWordRound() {
 
 /**
  * Shows a specific screen and hides others.
- * @param {string} screenId The ID of the screen to show ('mainMenu' or 'gameContainer').
+ * @param {string} screenId The ID of the screen to show ('mainMenu', 'gameContainer', or 'congratulationsScreen').
  */
 function showScreen(screenId) {
     mainMenu.classList.add('hidden');
     gameContainer.classList.add('hidden');
+    congratulationsScreen.classList.add('hidden');
 
     if (screenId === 'mainMenu') {
         mainMenu.classList.remove('hidden');
@@ -394,51 +325,35 @@ function showScreen(screenId) {
  * Starts a new game with the given word.
  * This is called when a game mode is selected from the menu.
  * @param {string} word The word to use for the game.
+ * @param {string} definition The definition of the word (optional, for random words).
  */
-function startNewGame(word) {
-    // This function is called when starting a game from the menu.
-    // It should always perform a full reset of the game state relevant to starting a new game mode.
-    currentClickIndex = 0;
-    firstClickMade = false;
-    timerDisplay.textContent = `Time: 0s`;
-    clearInterval(timerInterval);
-    gameBoard.innerHTML = ''; // Clear board for new word
-    gameBoard.classList.remove('visible');
-    score = 0; // Reset score for a fresh game start in either mode
-    scoreDisplay.textContent = `Score: 0`;
-    tryAgainButton.classList.add('hidden'); // Hide try again button when starting a new game
+function startNewGame(word, definition = '') {
+    // Added a delay to ensure the game container is fully rendered before game setup starts.
+    setTimeout(() => {
+        currentClickIndex = 0;
+        firstClickMade = false;
+        score = 0; // Reset score for a fresh game start in either mode
+        scoreDisplay.textContent = `Score: 0`;
+        tryAgainButton.classList.add('hidden'); // Hide try again button when starting a new game
 
-    targetWord = word.toLowerCase();
-    targetDefinition = ''; // Reset the definition for a custom word
-    letters = targetWord.split('');
+        targetWord = word.toLowerCase();
+        targetDefinition = definition; // Set the definition (empty for custom words)
+        letters = targetWord.split('');
 
-    // Calculate time limit for the new word
-    const baseTime = 5; // Minimum time
-    const timePerLetter = 1.5; // Seconds per letter
-    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
+        // Shuffle letters ONCE when the game starts for a new word
+        shuffledLetters = [...letters];
+        shuffleArray(shuffledLetters);
 
+        gameStarted = true;
+        wordInput.disabled = true;
+        startButton.disabled = true;
+        startButton.textContent = 'Game in Progress...';
 
-    // Shuffle letters ONCE when the game starts for a new word
-    shuffledLetters = [...letters];
-    shuffleArray(shuffledLetters);
-
-    gameStarted = true;
-    wordInput.disabled = true;
-    startButton.disabled = true;
-    startButton.textContent = 'Game in Progress...';
-
-    // Pass the newly shuffled letters to setupGameBoard
-    setupGameBoard(shuffledLetters);
-    // Set the message based on the mode
-    if (currentMode === 'random') {
-        displayMessage(`Study the order of "${targetWord.toUpperCase()}"! Click the word to see its definition.`);
-        setTimeout(() => {
-        attachDefinitionListener();
-        }, 100);
-    } else {
+        // Pass the newly shuffled letters to setupGameBoard
+        setupGameBoard(shuffledLetters);
+        // Set the message based on the mode
         displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
-    }
-    attachDefinitionListener(); // Attach the listener after a small delay
+    }, 200); // 200ms delay to ensure the screen has finished transitioning.
 }
 
 /**
@@ -483,8 +398,7 @@ randomWordButton.addEventListener('click', () => {
     customWordInputSection.classList.add('hidden'); // Hide custom input for random mode
     // Get a random word object, not just the word string
     const randomWordObject = randomWords[Math.floor(Math.random() * randomWords.length)];
-    startNewGame(randomWordObject.word); // Pass the word to startNewGame
-    targetDefinition = randomWordObject.definition; // Store the definition
+    startNewGame(randomWordObject.word, randomWordObject.definition); // Pass both word and definition
 });
 
 customWordButton.addEventListener('click', () => {
@@ -508,7 +422,7 @@ startButton.addEventListener('click', () => {
         displayMessage('Please enter only letters (A-Z, a-z).', 'error');
         return;
     }
-    startNewGame(word);
+    startNewGame(word); // Custom words don't have definitions
 });
 
 // Back to Main Menu Button
@@ -528,6 +442,9 @@ tryAgainButton.addEventListener('click', () => {
         startNextRandomWordRound();
     }
 });
+
+// New listener for the 'Next Word' button on the congratulations screen
+nextWordButton.addEventListener('click', startNextRandomWordRound);
 
 
 // Initial setup on page load

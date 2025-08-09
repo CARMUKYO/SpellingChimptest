@@ -3,41 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spelling Chimp Test</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <title>Spelling Chimp</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="main-menu" id="mainMenu">
-        <h1>Spelling Chimp Test</h1>
-        <p>Choose your game mode:</p>
-        <button id="randomWordButton">Play with a Random Word</button>
-        <button id="customWordButton">Enter Your Own Word</button>
-        <div id="highScoreDisplay" class="game-info-single">High Score: 0</div>
-    </div>
+    <div class="container">
+        <h1 id="gameTitle">Spelling Chimp</h1>
 
-    <div class="game-container hidden" id="gameContainer">
-        <h1 id="gameTitle">Spelling Chimp Test</h1>
-        <div class="input-section" id="customWordInputSection">
-            <label for="wordInput">Enter a word to practice spelling:</label>
-            <input type="text" id="wordInput" placeholder="e.g., 'apple'">
-            <button id="startButton">Start Game</button>
+        <!-- Main Menu Screen -->
+        <div id="mainMenu">
+            <p>Choose a game mode to get started!</p>
+            <button id="randomWordButton">Play Random Word</button>
+            <button id="customWordButton">Play Custom Word</button>
+            <p id="highScoreDisplay">High Score: 0</p>
         </div>
 
-        <p id="message">Enter a word and click "Start Game"!</p>
+        <!-- Game Container -->
+        <div id="gameContainer" class="hidden">
+            <div class="game-info">
+                <p id="scoreDisplay">Score: 0</p>
+            </div>
+            <p id="message">Enter a word and click "Start Game"!</p>
+            
+            <div id="customWordInputSection" class="hidden">
+                <input type="text" id="wordInput" placeholder="Enter a word (3-15 letters)">
+                <button id="startButton">Start Game</button>
+            </div>
+            
+            <div id="game-board"></div>
 
+            <div id="gameControls">
+                <button id="tryAgainButton" class="hidden">Try Again</button>
+                <button id="backToMenuButton">Back to Menu</button>
+            </div>
+        </div>
+
+        <!-- Definition Tooltip -->
         <div id="definitionTooltip" class="hidden"></div>
-        
-        <div id="game-board">
-        </div>
 
-        <div class="game-info">
-            <div id="timerDisplay">Time: 0s</div>
-            <div id="scoreDisplay">Score: 0</div>
+        <!-- Congratulations Screen (Initially hidden) -->
+        <div id="congratulationsScreen" class="congratulations-screen hidden">
+            <div class="congratulations-card">
+                <h2 id="congratsTitle"></h2>
+                <p id="congratsTime"></p>
+                <p class="definition" id="congratsDefinition"></p>
+                <button id="nextWordButton">Next Word</button>
+            </div>
         </div>
-
-        <button id="tryAgainButton" class="small-button hidden">Try Again</button>
-        <button id="backToMenuButton" class="small-button">Back to Main Menu</button>
     </div>
 
     <script type="module" src="words.js"></script>
