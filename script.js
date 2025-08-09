@@ -293,7 +293,7 @@ function startNextRandomWordRound() {
     // Setup board with new word's shuffled letters
     setupGameBoard(shuffledLetters);
     // Set the message and add listener here
-    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"!`, 'success');
+    displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
 
     gameStarted = true;
     wordInput.disabled = true;
