@@ -15,12 +15,17 @@ const scoreDisplay = document.getElementById('scoreDisplay');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const tryAgainButton = document.getElementById('tryAgainButton');
 const highScoreDisplay = document.getElementById('highScoreDisplay');
-const gameTitle = document.getElementById('gameTitle'); // Reference to the game title h1
 const congratulationsScreen = document.getElementById('congratulationsScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
 const congratsTitle = document.getElementById('congratsTitle');
 const congratsTime = document.getElementById('congratsTime');
 const congratsDefinition = document.getElementById('congratsDefinition');
 const nextWordButton = document.getElementById('nextWordButton');
+const gameOverTitle = document.getElementById('gameOverTitle');
+const gameOverWord = document.getElementById('gameOverWord');
+const gameOverDefinition = document.getElementById('gameOverDefinition');
+const timerDisplay = document.getElementById('timerDisplay');
+const restartButton = document.getElementById('restartButton');
 
 let targetWord = ''; // The word entered by the user or randomly selected
 let targetDefinition = ''; // The definition of the target word
@@ -28,7 +33,9 @@ let letters = []; // Array of letters from the target word (correct order)
 let shuffledLetters = []; // Letters shuffled for display (fixed order for the round)
 let currentClickIndex = 0; // Tracks which letter the user should click next
 let gameStarted = false; // Flag to indicate if the game is active
-let startTime = 0; // NEW: To track the start time for the timer
+let timeLimit = 0; // The total time allowed for the current word
+let remainingTime = 0; // Time left on the countdown
+let timerInterval; // To manage the timer
 let score = 0; // Player's current score
 let firstClickMade = false; // Flag to track the first click for hiding letters
 let currentMode = 'menu'; // 'menu', 'custom', 'random'
@@ -133,13 +140,10 @@ function handleCellClick(event) {
         clickedCell.classList.remove('incorrect', 'hide-content'); // Remove incorrect and hide-content
         clickedCell.classList.add('correct'); // Add correct
 
-        score++;
-        scoreDisplay.textContent = `Score: ${score}`;
-
-        // If this is the very first correct click, start the timer for time taken
+        // If this is the very first correct click, hide all other letters and start timer
         if (!firstClickMade) {
             firstClickMade = true;
-            startTime = Date.now(); // Record the start time
+            startTimer(); // Start timer here
             displayMessage('Click the remaining letters in the correct order!');
 
             document.querySelectorAll('.cell').forEach(cell => {
@@ -150,6 +154,8 @@ function handleCellClick(event) {
         }
 
         currentClickIndex++;
+        score++;
+        scoreDisplay.textContent = `Score: ${score}`;
 
         // Check if all letters have been clicked
         if (currentClickIndex === letters.length) {
@@ -157,14 +163,31 @@ function handleCellClick(event) {
         }
     } else {
         // Incorrect click - Trigger game over (loss)
-        displayMessage(`Incorrect! The word was "${targetWord.toUpperCase()}". Your score: ${score}.`, 'error');
-        // Briefly show the incorrect cell before ending the game
         clickedCell.classList.remove('hide-content'); // Ensure letter is visible for incorrect flash
         clickedCell.classList.add('incorrect');
         setTimeout(() => {
             endGame(false); // Game lost (due to incorrect click)
         }, 800); // Give a short moment for the red highlight to be seen
     }
+}
+
+/**
+ * Starts the game countdown timer.
+ */
+function startTimer() {
+    clearInterval(timerInterval); // Clear any existing timer
+    remainingTime = timeLimit; // Initialize remaining time
+    timerDisplay.textContent = `Time: ${remainingTime}s`;
+
+    timerInterval = setInterval(() => {
+        remainingTime--;
+        timerDisplay.textContent = `Time: ${remainingTime}s`;
+
+        if (remainingTime <= 0) {
+            clearInterval(timerInterval);
+            endGame(false); // Time's up!
+        }
+    }, 1000);
 }
 
 /**
@@ -175,11 +198,34 @@ function showCongratulationsScreen(timeTaken) {
     congratsTitle.textContent = `Congratulations! You spelled "${targetWord.toUpperCase()}"!`;
     congratsTime.textContent = `You finished in ${timeTaken.toFixed(2)} seconds.`;
     congratsDefinition.textContent = targetDefinition;
-    
+
     // Hide game elements and show the new screen
     gameContainer.classList.add('hidden');
     congratulationsScreen.classList.remove('hidden');
     congratulationsScreen.classList.add('visible');
+}
+
+/**
+ * Shows the game over screen with game details.
+ */
+function showGameOverScreen() {
+    gameOverTitle.textContent = `Game Over!`;
+    gameOverWord.textContent = `The correct word was: "${targetWord.toUpperCase()}"`;
+    gameOverDefinition.textContent = targetDefinition;
+
+    // Hide game elements and show the new screen
+    gameContainer.classList.add('hidden');
+    gameOverScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('visible');
+}
+
+/**
+ * Hides the game over screen and returns to the game container.
+ */
+function hideGameOverScreen() {
+    gameOverScreen.classList.remove('visible');
+    gameOverScreen.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
 }
 
 /**
@@ -191,15 +237,18 @@ function hideCongratulationsScreen() {
     gameContainer.classList.remove('hidden');
 }
 
+
 /**
- * Ends the game, and displays results.
+ * Ends the game, stops the timer, and displays results.
  * @param {boolean} won True if the player won, false otherwise.
  */
 function endGame(won) {
     gameStarted = false;
+    clearInterval(timerInterval); // Stop the timer
     startButton.disabled = false;
     startButton.textContent = 'Play Again';
     wordInput.disabled = false;
+    timerDisplay.classList.add('hidden');
 
     // Reveal all letters at the end of the game
     document.querySelectorAll('.cell').forEach(cell => {
@@ -209,16 +258,21 @@ function endGame(won) {
 
     if (won) {
         if (currentMode === 'random') {
-            const timeTaken = (Date.now() - startTime) / 1000;
+            const timeTaken = (timeLimit - remainingTime);
             saveHighScore(score); // Save high score on win in random mode
             showCongratulationsScreen(timeTaken); // Show the congratulations screen
         } else { // Custom word mode
             displayMessage(`Congratulations! You spelled "${targetWord.toUpperCase()}"!`, 'success');
             tryAgainButton.classList.remove('hidden'); // Show try again button after custom win
         }
-    } else { // Game lost (due to incorrect click)
+    } else { // Game lost (due to incorrect click or time running out)
         saveHighScore(score); // Save high score only on game over (loss)
-        tryAgainButton.classList.remove('hidden'); // Show try again button after loss
+        if (currentMode === 'random') {
+             showGameOverScreen();
+        } else {
+            tryAgainButton.classList.remove('hidden'); // Show try again button after loss
+            displayMessage(`Game Over! The word was "${targetWord.toUpperCase()}"`, 'error');
+        }
     }
 }
 
@@ -228,7 +282,7 @@ function endGame(won) {
  */
 function resetGame() {
     targetWord = '';
-    targetDefinition = ''; // Reset definition
+    targetDefinition = '';
     letters = [];
     shuffledLetters = []; // Clear shuffled letters on full reset
     currentClickIndex = 0;
@@ -236,6 +290,7 @@ function resetGame() {
     score = 0; // Reset score on full game reset
     firstClickMade = false; // Reset the flag
     scoreDisplay.textContent = `Score: 0`;
+    clearInterval(timerInterval);
     gameBoard.innerHTML = '';
     gameBoard.classList.remove('visible');
     displayMessage('Enter a word and click "Start Game"!');
@@ -244,6 +299,8 @@ function resetGame() {
     startButton.textContent = 'Start Game';
     startButton.disabled = false;
     tryAgainButton.classList.add('hidden'); // Hide try again button on full reset
+    timerDisplay.classList.add('hidden');
+    timerDisplay.textContent = 'Time: 0s';
 }
 
 /**
@@ -255,11 +312,19 @@ function restartRound() {
     score = 0; // Reset score for the current custom word round
     firstClickMade = false; // Reset the flag
     scoreDisplay.textContent = `Score: 0`;
+    clearInterval(timerInterval); // Stop any running timer
+    timerDisplay.classList.remove('hidden');
+    timerDisplay.textContent = 'Time: 0s';
 
     // Re-setup the game board using the *existing* shuffledLetters array
     setupGameBoard(shuffledLetters);
     displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
-    
+
+    // Re-calculate time limit for the existing word
+    const baseTime = 5; // Minimum time
+    const timePerLetter = 2; // Seconds per letter
+    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
+
     // Keep inputs disabled as the game is still in progress with the same word
     wordInput.disabled = true;
     startButton.disabled = true;
@@ -275,11 +340,15 @@ function restartRound() {
  */
 function startNextRandomWordRound() {
     hideCongratulationsScreen(); // Hide the congratulations screen if it's visible
+    hideGameOverScreen();
 
     // Keep current score, only reset round-specific variables
     currentClickIndex = 0;
     firstClickMade = false;
-    
+    clearInterval(timerInterval); // Stop previous timer
+    timerDisplay.classList.remove('hidden');
+    timerDisplay.textContent = 'Time: 0s'; // Explicitly reset timer display
+
     // Get a new random word OBJECT from the array
     const randomWordObject = randomWords[Math.floor(Math.random() * randomWords.length)];
     targetWord = randomWordObject.word.toLowerCase();
@@ -290,10 +359,16 @@ function startNextRandomWordRound() {
     shuffledLetters = [...letters];
     shuffleArray(shuffledLetters);
 
+    // Calculate time limit for the new random word
+    const baseTime = 5; // Minimum time
+    const timePerLetter = 2; // Seconds per letter
+    timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
+
     // Setup board with new word's shuffled letters
     setupGameBoard(shuffledLetters);
+
     // Set the message and add listener here
-    displayMessage(`Study the order of "${targetWord.toUpperCase()}"!`);
+    displayMessage(`New word: Study the order of "${targetWord.toUpperCase()}"!`);
 
     gameStarted = true;
     wordInput.disabled = true;
@@ -305,12 +380,13 @@ function startNextRandomWordRound() {
 
 /**
  * Shows a specific screen and hides others.
- * @param {string} screenId The ID of the screen to show ('mainMenu', 'gameContainer', or 'congratulationsScreen').
+ * @param {string} screenId The ID of the screen to show ('mainMenu', 'gameContainer', 'congratulationsScreen', 'gameOverScreen').
  */
 function showScreen(screenId) {
     mainMenu.classList.add('hidden');
     gameContainer.classList.add('hidden');
     congratulationsScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
 
     if (screenId === 'mainMenu') {
         mainMenu.classList.remove('hidden');
@@ -335,10 +411,17 @@ function startNewGame(word, definition = '') {
         score = 0; // Reset score for a fresh game start in either mode
         scoreDisplay.textContent = `Score: 0`;
         tryAgainButton.classList.add('hidden'); // Hide try again button when starting a new game
+        timerDisplay.classList.remove('hidden');
+        timerDisplay.textContent = 'Time: 0s'; // Explicitly reset timer display
 
         targetWord = word.toLowerCase();
         targetDefinition = definition; // Set the definition (empty for custom words)
         letters = targetWord.split('');
+
+        // Calculate time limit for the new word
+        const baseTime = 5; // Minimum time
+        const timePerLetter = 1.5; // Seconds per letter
+        timeLimit = Math.max(baseTime, Math.floor(targetWord.length * timePerLetter));
 
         // Shuffle letters ONCE when the game starts for a new word
         shuffledLetters = [...letters];
@@ -445,6 +528,13 @@ tryAgainButton.addEventListener('click', () => {
 
 // New listener for the 'Next Word' button on the congratulations screen
 nextWordButton.addEventListener('click', startNextRandomWordRound);
+
+// Listener for the 'Try Again' button on the game over screen
+restartButton.addEventListener('click', () => {
+    score = 0; // Reset score on game over screen retry
+    scoreDisplay.textContent = `Score: 0`;
+    startNextRandomWordRound();
+});
 
 
 // Initial setup on page load
