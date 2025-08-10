@@ -18,6 +18,15 @@ body {
     display: none !important;
 }
 
+/* Main content container */
+.container {
+    max-width: 90%;
+    width: 600px;
+    margin: 0 auto;
+    padding: 0 10px; /* Added horizontal padding to prevent content from touching edges */
+}
+
+
 /* Main Menu styling */
 .main-menu {
     background-color: #ffffff;
@@ -25,8 +34,7 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     padding: 30px;
     text-align: center;
-    max-width: 90%;
-    width: 600px;
+    max-width: 100%; /* Ensure it fits within the parent container */
     transition: all 0.3s ease-in-out;
 }
 
@@ -43,8 +51,7 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     padding: 30px;
     text-align: center;
-    max-width: 90%;
-    width: 600px;
+    max-width: 100%; /* Ensure it fits within the parent container */
     transition: all 0.3s ease-in-out;
 }
 
@@ -203,10 +210,10 @@ button:disabled {
 /* Game board styling */
 #game-board {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); /* Responsive grid */
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); /* Adjusted minmax for better mobile fit */
     gap: 10px;
     margin: 30px auto;
-    max-width: 500px;
+    max-width: 100%; /* Ensure it's not fixed width */
     padding: 15px;
     background-color: #e9f5ff;
     border-radius: 10px;
