@@ -5,71 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spelling Chimp</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script type="module" src="script.js"></script>
 </head>
 <body>
 
-    <main class="container">
-        <!-- Main Menu Screen -->
-        <section id="mainMenu" class="main-menu">
-            <h1 id="gameTitle">Spelling Chimp</h1>
-            <p>Select a game mode to begin.</p>
-            <div class="menu-buttons">
+    <!-- Main Menu Screen -->
+    <div id="mainMenu" class="main-menu container">
+        <h1>Spelling Chimp</h1>
+        <p>Select a game mode to begin!</p>
+         <div class="menu-buttons">
                 <button id="randomWordButton">Play Random Word</button>
                 <button id="customWordButton">Enter Custom Word</button>
-            </div>
-            <p id="highScoreDisplay" class="game-info-single">High Score: 0</p>
-        </section>
+        </div>
+        <p id="highScoreDisplay" class="game-info-single">High Score: 0</p>
+    </div>
 
-        <!-- Game Container Screen -->
-        <section id="gameContainer" class="game-container hidden">
-            <h1 id="gameTitle">Spelling Chimp</h1>
-            
-            <div id="customWordInputSection" class="input-section hidden">
-                <label for="wordInput">Enter a word (3-15 letters):</label>
-                <input type="text" id="wordInput" placeholder="e.g., banana">
-                <button id="startButton">Start Game</button>
-            </div>
+    <!-- Game Screen -->
+    <div id="gameContainer" class="game-container container hidden">
+        <h1>Spelling Chimp</h1>
+        <div class="input-section hidden" id="customWordInputSection">
+            <label for="wordInput">Enter a word (3-15 letters):</label>
+            <input type="text" id="wordInput" placeholder="e.g., banana">
+            <button id="startButton">Start Game</button>
+        </div>
+        <div id="message"></div>
+        <div id="game-board"></div>
+        <div class="game-info">
+            <p id="scoreDisplay">Score: 0</p>
+            <p id="timerDisplay">Time: 0s</p>
+        </div>
+        <button id="backToMenuButton" class="small-button">Back to Main Menu</button>
+    </div>
 
-            <p id="message">Enter a word and click "Start Game"!</p>
-
-            <div id="game-board">
-                <!-- Cells will be dynamically generated here -->
-            </div>
-
-            <div class="game-info">
-                <p id="scoreDisplay">Score: 0</p>
-                <p id="timerDisplay">Time: 0s</p>
-            </div>
-
-            <div id="gameControls">
-                <button id="tryAgainButton" class="hidden">Try Again</button>
-                <button id="backToMenuButton" class="small-button">Back to Main Menu</button>
-            </div>
-        </section>
-    </main>
-
-    <!-- Congratulations Screen (Word correctly spelled) -->
-    <section id="congratulationsScreen" class="congratulations-screen hidden">
+    <!-- Congratulations Overlay -->
+    <div id="congratulationsScreen" class="congratulations-screen hidden">
         <div class="congratulations-card">
-            <h2 id="congratsTitle">Congratulations!</h2>
+            <h2 id="congratsTitle"></h2>
             <p id="congratsTime"></p>
             <p id="congratsDefinition" class="definition"></p>
+            <p id="congratsScore"></p>
             <button id="nextWordButton">Next Word</button>
         </div>
-    </section>
+    </div>
 
-    <!-- Game Over Screen (Incorrect answer or time out) -->
-    <section id="gameOverScreen" class="congratulations-screen hidden">
+    <!-- Game Over Overlay -->
+    <div id="gameOverScreen" class="congratulations-screen hidden">
         <div class="congratulations-card">
-            <h2 id="gameOverTitle">Game Over!</h2>
+            <h2 id="gameOverTitle"></h2>
             <p id="gameOverWord"></p>
             <p id="gameOverDefinition" class="definition"></p>
+            <p id="gameOverScore"></p>
+            <p id="gameOverHighScoreMessage"></p>
             <button id="restartButton">Try Again</button>
         </div>
-    </section>
+    </div>
+
+    <!-- Hidden element for definition tooltip -->
+    <div id="definitionTooltip" class="hidden"></div>
     
     <script type="module" src="script.js"></script>
     <script type="module" src="words.js"></script>
